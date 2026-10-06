@@ -1,0 +1,109 @@
+@import "tailwindcss";
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
+@import "@fontsource/poppins/700.css";
+
+/* stylelint-disable at-rule-no-unknown -- Tailwind CSS v4 directive */
+@theme {
+  --font-sans: "Poppins", Arial, Helvetica, sans-serif;
+
+  /* Content surfaces */
+  --color-ink: #16180f;
+  --color-muted: #6b6d63;
+  --color-label: #8d8f83;
+  --color-cream: #f7f6f1;
+  --color-paper: #ffffff;
+  --color-line: #e4e3dc;
+
+  /* Brand green (active nav, primary buttons) */
+  --color-brand: #43A202;
+  --color-brand-dark: #19975033;
+  --color-brand-light: #e6f4e8;
+
+  /* Sidebar */
+  --color-sidebar: #0A4323;
+  --color-sidebar-black: #070c07;
+  --color-sidebar-line: rgba(255, 255, 255, 0.09);
+  --color-sidebar-text: rgba(255, 255, 255, 0.82);
+  --color-sidebar-text-dim: rgba(255, 255, 255, 0.42);
+}
+/* stylelint-enable at-rule-no-unknown */
+
+:root {
+  color-scheme: light;
+  font: 14px/1.5 var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--color-ink);
+  background: var(--color-cream);
+}
+
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+@media print {
+  @page {
+    margin: 12mm 15mm;
+    size: A4 portrait;
+  }
+
+  aside, 
+  header, 
+  nav, 
+  .sidebar, 
+  button {
+    display: none !important;
+  }
+
+  body, html, #root {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Screen layouts often use overflow-y-auto on main container */
+  main, [role="main"] {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:block {
+    display: block !important;
+  }
+
+  .break-before-page {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  /* Avoid splitting cards across pages */
+  section, .rounded-2xl, .rounded-xl {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

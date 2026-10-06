@@ -1,0 +1,28 @@
+// Short button labels for the Step 1 "Quick Load" row — distinct from the longer
+// TECH_REGISTRY dropdown labels, matching the original demo.html example chips.
+export const QUICK_LOAD: { key: string; label: string }[] = [
+  { key: 'nano_urea', label: 'Nano Urea' },
+  { key: 'nano_dap', label: 'Nano DAP' },
+  { key: 'rhizobium', label: 'Rhizobium' },
+  { key: 'mycorrhiza', label: 'Mycorrhiza' },
+  { key: 'fusicont', label: 'FUSICONT Bio' },
+  { key: 'pusa_decomposer', label: 'Pusa Decomposer' },
+  { key: 'pusa_wheat', label: 'Pusa Wheat' },
+  { key: 'icrisat_sorghum', label: 'ICRISAT Sorghum' },
+  { key: 'icrisat_pearl_millet', label: 'Pearl Millet' },
+  { key: 'embrapa_soy', label: 'EMBRAPA Soy' },
+  { key: 'drip', label: 'Jain Drip' },
+  { key: 'awd_kit', label: 'AWD Kit' },
+  { key: 'solar', label: 'Solar Pump' },
+  { key: 'solar_dryer', label: 'Solar Dryer' },
+  { key: 'happy_seeder', label: 'Happy Seeder' },
+  { key: 'hermetic', label: 'GrainPro Bags' },
+  { key: 'cold_chain', label: 'Cold Storage' },
+  { key: 'fmd', label: 'FMD Vaccine' },
+  { key: 'preg_d', label: 'Preg-D Kit' },
+  { key: 'wssv_kit', label: 'WSSV Shrimp Kit' },
+  { key: 'digital', label: 'CropIn Advisory' },
+  { key: 'farmonaut', label: 'Farmonaut' },
+  { key: 'hello_tractor', label: 'Hello Tractor' },
+  { key: 'sri', label: 'SRI Rice' },
+];
