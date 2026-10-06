@@ -1,5 +1,5 @@
 // my-app/src/UI/GtmPlanContent.tsx
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { ExternalLink, RefreshCw } from 'lucide-react';
 import { useWizard } from '../state/wizardStore';
 import { COUNTRIES } from '../data/countries';
@@ -399,7 +399,7 @@ export default function GtmPlanContent({
         <div className="space-y-4">
           {milestones.map((m, idx) => (
             <div key={idx} className="flex items-start gap-4 rounded-xl border border-line/50 bg-cream/20 p-4 transition hover:bg-cream/40">
-              <span className="flex h-7 min-w-[72px] shrink-0 items-center justify-center rounded-full border border-amber-300 bg-amber-100 px-2.5 text-md font-bold text-amber-900">
+              <span className="flex h-7 min-w-18 shrink-0 items-center justify-center rounded-full border border-amber-300 bg-amber-100 px-2.5 text-md font-bold text-amber-900">
                 {m.timing}
               </span>
               <div>
