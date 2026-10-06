@@ -1,5 +1,5 @@
 // src/services/agriApi.ts
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://agripath-backend.onrender.com/api';
+const BASE_URL = 'https://agripath-backend.onrender.com/api';
 
 // ==============================================================================
 // 1. TYPES & INTERFACES
