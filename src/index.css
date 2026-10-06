@@ -1,8 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
-@import "@fontsource/poppins/400.css";
-@import "@fontsource/poppins/500.css";
-@import "@fontsource/poppins/600.css";
-@import "@fontsource/poppins/700.css";
 
 /* stylelint-disable at-rule-no-unknown -- Tailwind CSS v4 directive */
 @theme {
@@ -33,18 +30,25 @@
 :root {
   color-scheme: light;
   font: 14px/1.5 var(--font-sans);
+  font-family: "Poppins", Arial, Helvetica, sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 * {
   box-sizing: border-box;
+  font-family: "Poppins", Arial, Helvetica, sans-serif !important;
 }
 
 body {
   margin: 0;
   color: var(--color-ink);
   background: var(--color-cream);
+  font-family: "Poppins", Arial, Helvetica, sans-serif !important;
+}
+
+button, input, select, textarea {
+  font-family: "Poppins", Arial, Helvetica, sans-serif !important;
 }
 
 button:not(:disabled) {
@@ -76,6 +80,7 @@ button:not(:disabled) {
     height: auto !important;
     min-height: auto !important;
     overflow: visible !important;
+    font-family: "Poppins", Arial, Helvetica, sans-serif !important;
   }
 
   /* Screen layouts often use overflow-y-auto on main container */
