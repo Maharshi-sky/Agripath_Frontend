@@ -1,5 +1,13 @@
 // src/services/agriApi.ts
-const BASE_URL = 'https://agripath-backend.onrender.com/api';
+
+const isLocal = typeof window !== 'undefined' && (
+  window.location.hostname === 'localhost' || 
+  window.location.hostname === '127.0.0.1'
+);
+
+const BASE_URL = isLocal
+  ? 'http://localhost:5001/api'
+  : 'https://agripath-backend.onrender.com/api';
 
 // ==============================================================================
 // 1. TYPES & INTERFACES
