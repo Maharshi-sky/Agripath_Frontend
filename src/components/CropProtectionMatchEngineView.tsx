@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { MapPin, Sparkles } from 'lucide-react';
 import { useWizard } from '../state/wizardStore';
 import MatchAnalysisLoading from '../UI/MatchAnalysisLoading';
+import { BASE_URL } from '../services/agriApi';
 
 export default function CropProtectionMatchEngineView() {
   const { state, setSelectedMatch } = useWizard();
@@ -52,7 +53,7 @@ export default function CropProtectionMatchEngineView() {
     async function loadProtectionMatch() {
       setLoading(true);
       try {
-        const res = await fetch('http://localhost:5001/api/crop-protection/calculate-match', {
+        const res = await fetch(`${BASE_URL}/api/crop-protection/calculate-match`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
