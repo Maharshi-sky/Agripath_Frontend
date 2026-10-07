@@ -1,8 +1,9 @@
-// my-app/src/UI/GtmPlanContent.tsx
+// src/UI/GtmPlanContent.tsx
 import { useEffect, useState, useRef } from 'react';
 import { ExternalLink, RefreshCw } from 'lucide-react';
 import { useWizard } from '../state/wizardStore';
 import { COUNTRIES } from '../data/countries';
+import { agriApi } from '../services/agriApi';
 
 export interface GtmPlanContentProps {
   country?: string;
@@ -49,7 +50,6 @@ export default function GtmPlanContent({
   const { state } = useWizard();
   const [aiDeepDiveOpen, setAiDeepDiveOpen] = useState(false);
 
-  // 1. User Selections & Category Identification
   const country = propCountry || state.countries?.[0] || 'Target Country';
   const tech = propTechData || state.tech || {};
 
@@ -89,48 +89,33 @@ export default function GtmPlanContent({
 
   const regionName = COUNTRIES.find((c) => c.n === country)?.r || 'Global Market';
 
-  // 2. Dynamic AI State
   const [planData, setPlanData] = useState<GtmAiResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // In-flight guard against duplicate calls
   const isFetchingRef = useRef(false);
 
   useEffect(() => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
 
-    const controller = new AbortController();
-
     async function fetchAiGtmPlan() {
       setLoading(true);
       try {
-        const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-        const res = await fetch(`${BASE_URL}/gtm/generate-plan`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify({
-            country,
-            crop: userCrop,
-            variety: userVariety,
-            category: selectedCategoryDisplay,
-            yieldImpact: yieldText,
-            benefits: tech.keyBenefits || tech.desc || '',
-            applicationMethod: tech.applicationMethod || tech.method || '',
-          }),
+        const json = await agriApi.generateGtmPlan({
+          country,
+          crop: userCrop,
+          variety: userVariety,
+          category: selectedCategoryDisplay,
+          yieldImpact: yieldText,
+          benefits: tech.keyBenefits || tech.desc || '',
+          applicationMethod: tech.applicationMethod || tech.method || '',
         });
 
-        if (res.ok) {
-          const json = await res.json();
-          if (json.data) {
-            setPlanData(json.data);
-          }
+        if (json?.data) {
+          setPlanData(json.data);
         }
       } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          console.warn('GTM AI call error:', err);
-        }
+        console.warn('GTM AI call error:', err);
       } finally {
         setLoading(false);
         isFetchingRef.current = false;
@@ -138,13 +123,8 @@ export default function GtmPlanContent({
     }
 
     fetchAiGtmPlan();
-
-    return () => {
-      controller.abort();
-    };
   }, [country, userCrop, userVariety, selectedCategoryDisplay, yieldText]);
 
-  // 3. Category-Aware Fallback Milestones
   const milestones = planData?.milestones || (isBio ? [
     {
       timing: 'Day 1',
@@ -185,7 +165,6 @@ export default function GtmPlanContent({
     { timing: 'Week 10–12', title: 'First Commercial Consignment & Development Grants', desc: `Convert demonstration harvest results into first commercial shipments and apply for regional development financing support.` },
   ]);
 
-  // 4. First Contacts
   const firstContacts = planData?.first_contacts || [
     {
       name: isBio ? `National Bio-Inputs & Fertilizer Directorate (${country})` : `National Plant Protection & Seed Authority (${country})`,
@@ -201,7 +180,6 @@ export default function GtmPlanContent({
     }
   ];
 
-  // 5. Funding & Partnership Windows
   const fundingWindows = planData?.funding_windows || [
     {
       name: isBio ? 'AGRA Regenerative Agriculture & Soil Health Fund' : 'AGRA Inclusive Agricultural Transformation',
@@ -231,7 +209,6 @@ export default function GtmPlanContent({
     }
   ];
 
-  // 6. Success Metrics
   const successMetrics = planData?.success_metrics || (isBio ? [
     { horizon: '30 days', target: `Bio-regulatory dossier submitted · ${userVariety} field trial MoU signed · Cold-chain storage audit completed` },
     { horizon: '60 days', target: `On-farm bio-demo plots established (50–200 clusters) · Distributor contracts signed · Import clearance secured` },
@@ -242,98 +219,32 @@ export default function GtmPlanContent({
     { horizon: '90 days', target: 'First commercial consignment cleared · Verified yield data added to registration dossier · Development grant filed' }
   ]);
 
-  // 7. Dynamic Category-Specific Statutory Documents
   const bioDocumentsList = [
-    {
-      name: 'Biofertilizer / Biostimulant Registration Dossier',
-      url: 'https://agriwelfare.gov.in/',
-      authority: 'Department of Agriculture & Farmers Welfare (DA&FW)',
-    },
-    {
-      name: 'Certificate of Analysis (CFU & Viability Assay)',
-      url: 'https://www.nbair.res.in/',
-      authority: 'National Bureau of Agricultural Insect Resources (ICAR-NBAIR)',
-    },
-    {
-      name: '16-Section GHS Safety Data Sheet (MSDS/SDS)',
-      url: 'https://www.fao.org/pest-and-pesticide-management',
-      authority: 'FAO Pesticide Management Guidelines',
-    },
-    {
-      name: 'Phytosanitary Export Certificate (DPPQS)',
-      url: 'https://ppqs.gov.in/',
-      authority: 'DPPQS India Plant Quarantine Portal',
-    },
-    {
-      name: 'Microbial Non-Pathogenicity & Biosafety Certification',
-      url: 'https://geacindia.gov.in',
-      authority: 'Genetic Engineering Appraisal Committee (GEAC)',
-    },
-    {
-      name: 'Multi-Location Bio-Efficacy Field Trial Report',
-      url: 'https://icar.org.in',
-      authority: 'ICAR Agrochemical & Microbial Registry',
-    },
-    {
-      name: 'Certificate of Origin (CoO - Non-Preferential)',
-      url: 'https://www.trade.gov.in/pages/certificate-of-origin',
-      authority: 'Directorate General of Foreign Trade (DGFT)',
-    },
-    {
-      name: 'Bilingual Statutory Product Label Specimen',
-      url: 'https://www.fao.org/faolex',
-      authority: 'FAOLEX National Input Regulation Framework',
-    },
+    { name: 'Biofertilizer / Biostimulant Registration Dossier', url: 'https://agriwelfare.gov.in/', authority: 'Department of Agriculture & Farmers Welfare (DA&FW)' },
+    { name: 'Certificate of Analysis (CFU & Viability Assay)', url: 'https://www.nbair.res.in/', authority: 'National Bureau of Agricultural Insect Resources (ICAR-NBAIR)' },
+    { name: '16-Section GHS Safety Data Sheet (MSDS/SDS)', url: 'https://www.fao.org/pest-and-pesticide-management', authority: 'FAO Pesticide Management Guidelines' },
+    { name: 'Phytosanitary Export Certificate (DPPQS)', url: 'https://ppqs.gov.in/', authority: 'DPPQS India Plant Quarantine Portal' },
+    { name: 'Microbial Non-Pathogenicity & Biosafety Certification', url: 'https://geacindia.gov.in', authority: 'Genetic Engineering Appraisal Committee (GEAC)' },
+    { name: 'Multi-Location Bio-Efficacy Field Trial Report', url: 'https://icar.org.in', authority: 'ICAR Agrochemical & Microbial Registry' },
+    { name: 'Certificate of Origin (CoO - Non-Preferential)', url: 'https://www.trade.gov.in/pages/certificate-of-origin', authority: 'Directorate General of Foreign Trade (DGFT)' },
+    { name: 'Bilingual Statutory Product Label Specimen', url: 'https://www.fao.org/faolex', authority: 'FAOLEX National Input Regulation Framework' },
   ];
 
   const seedDocumentsList = [
-    {
-      name: 'Breeder / Foundation Seed Certificate',
-      url: 'https://seedtrace.gov.in/',
-      authority: 'Seed Authentication, Traceability & Holistic Inventory (SATHI)',
-    },
-    {
-      name: 'DUS + VCU Field Trial Protocol & Data',
-      url: 'https://www.upov.int',
-      authority: 'UPOV / CGIAR Framework',
-    },
-    {
-      name: 'Technical Agronomic Description Dossier',
-      url: 'https://icar.org.in',
-      authority: 'ICAR Technical Registry',
-    },
-    {
-      name: 'Phytosanitary Export Certificate (DPPQS)',
-      url: 'https://ppqs.gov.in/',
-      authority: 'DPPQS India Plant Quarantine Portal',
-    },
-    {
-      name: 'ISTA Orange International Seed Lot Certificate',
-      url: 'https://www.seedtest.org',
-      authority: 'International Seed Testing Association (ISTA)',
-    },
-    {
-      name: 'Non-GMO Declaration & Biosafety Affidavit',
-      url: 'https://geacindia.gov.in',
-      authority: 'Genetic Engineering Appraisal Committee (GEAC)',
-    },
-    {
-      name: 'Certificate of Origin (CoO - Non-Preferential)',
-      url: 'https://www.trade.gov.in/pages/certificate-of-origin',
-      authority: 'Directorate General of Foreign Trade (DGFT)',
-    },
-    {
-      name: 'Certified Local-Language Variety Label Specimen',
-      url: 'https://www.fao.org/faolex',
-      authority: 'FAOLEX National Regulation Guidelines',
-    },
+    { name: 'Breeder / Foundation Seed Certificate', url: 'https://seedtrace.gov.in/', authority: 'Seed Authentication, Traceability & Holistic Inventory (SATHI)' },
+    { name: 'DUS + VCU Field Trial Protocol & Data', url: 'https://www.upov.int', authority: 'UPOV / CGIAR Framework' },
+    { name: 'Technical Agronomic Description Dossier', url: 'https://icar.org.in', authority: 'ICAR Technical Registry' },
+    { name: 'Phytosanitary Export Certificate (DPPQS)', url: 'https://ppqs.gov.in/', authority: 'DPPQS India Plant Quarantine Portal' },
+    { name: 'ISTA Orange International Seed Lot Certificate', url: 'https://www.seedtest.org', authority: 'International Seed Testing Association (ISTA)' },
+    { name: 'Non-GMO Declaration & Biosafety Affidavit', url: 'https://geacindia.gov.in', authority: 'Genetic Engineering Appraisal Committee (GEAC)' },
+    { name: 'Certificate of Origin (CoO - Non-Preferential)', url: 'https://www.trade.gov.in/pages/certificate-of-origin', authority: 'Directorate General of Foreign Trade (DGFT)' },
+    { name: 'Certified Local-Language Variety Label Specimen', url: 'https://www.fao.org/faolex', authority: 'FAOLEX National Regulation Guidelines' },
   ];
 
   const documentsList = isBio ? bioDocumentsList : seedDocumentsList;
 
   return (
     <div className="space-y-6">
-      {/* 1. TOP HERO BANNER CARD */}
       <div className="overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#071C10_0%,#0B4223_55%,#08311B_100%)] p-7 text-white shadow-md">
         <div className="mb-2 text-md font-bold uppercase tracking-[0.16em] text-emerald-400">
           90-DAY GO-TO-MARKET · {country.toUpperCase()}
@@ -343,7 +254,6 @@ export default function GtmPlanContent({
           {dynamicHeaderTitle}
         </h2>
 
-        {/* Real Context Writeup */}
         <div className="mt-3 rounded-xl border border-white/15 bg-white/5 p-3.5 backdrop-blur-xs">
           <p className="text-sm leading-relaxed text-white/90">
             <span className="font-semibold text-emerald-400">Executive Deployment Brief:</span>{' '}
@@ -353,7 +263,6 @@ export default function GtmPlanContent({
                 : `Market deployment roadmap structured for ${userVariety} (${userCrop}) in ${country}. Focused on accelerated statutory compliance, regional field-trials, and rapid agro-dealer distribution.`)}
           </p>
 
-          {/* Production Belts & Sowing/Application Window Badges */}
           <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-2.5 text-xs text-white/80">
             <span className="rounded-md bg-emerald-950/70 px-2.5 py-1 font-semibold text-emerald-300 border border-emerald-500/30">
               {isBio ? 'Target Clusters:' : 'Production Hubs:'} {planData?.production_hubs || (isBio ? `Primary ${userCrop} Agricultural Belts` : 'Primary Irrigated Schemes & High-Yield Belts')}
@@ -382,7 +291,6 @@ export default function GtmPlanContent({
         </div>
       </div>
 
-      {/* 2. 90-DAY ACTION ROADMAP */}
       <div className="rounded-2xl border border-line bg-paper p-6 shadow-sm">
         <div className="mb-5 flex items-center justify-between border-b border-line pb-3">
           <h3 className="text-md font-bold uppercase tracking-wider text-ink">
@@ -411,7 +319,6 @@ export default function GtmPlanContent({
         </div>
       </div>
 
-      {/* 3. FIRST CONTACTS */}
       <div className="rounded-2xl border border-line bg-paper p-6 shadow-sm">
         <h3 className="mb-4 text-md font-bold uppercase tracking-wider text-ink border-b border-line pb-3">
           First Contacts — Week 1
@@ -426,7 +333,6 @@ export default function GtmPlanContent({
         </div>
       </div>
 
-      {/* 4. FUNDING & PARTNERSHIP WINDOWS */}
       <div className="rounded-2xl border border-line bg-paper p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between border-b border-line pb-3">
           <h3 className="text-md font-bold uppercase tracking-wider text-ink">
@@ -463,7 +369,6 @@ export default function GtmPlanContent({
         </div>
       </div>
 
-      {/* 5. DOCUMENTS TO PREPARE NOW (DYNAMIC BIO VS SEEDS) */}
       <div className="rounded-2xl border border-line bg-paper p-6 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
           <h3 className="text-md font-bold uppercase tracking-wider text-ink">
@@ -491,7 +396,6 @@ export default function GtmPlanContent({
         </div>
       </div>
 
-      {/* 6. SUCCESS METRICS */}
       <div className="overflow-hidden rounded-2xl border border-line bg-paper shadow-sm">
         <div className="border-b border-line px-6 py-4">
           <h3 className="text-md font-bold uppercase tracking-wider text-ink">
@@ -518,7 +422,6 @@ export default function GtmPlanContent({
         </div>
       </div>
 
-      {/* 7. AI DEEP DIVE */}
       <div className="rounded-2xl border border-line/80 bg-paper/60 p-4.5 shadow-sm flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted max-w-2xl leading-relaxed">
           <span className="font-semibold text-ink">Optional AI deep-dive.</span> Generate a customized product-specific commercial narrative for {userVariety} in {country}.

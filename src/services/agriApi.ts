@@ -5,7 +5,7 @@ const isLocal = typeof window !== 'undefined' && (
   window.location.hostname === '127.0.0.1'
 );
 
-const BASE_URL = isLocal
+export const BASE_URL = isLocal
   ? 'http://localhost:5001/api'
   : 'https://agripath-backend.onrender.com/api';
 
@@ -86,6 +86,17 @@ export interface RegulatoryPathwayPayload {
   country: string;
   subCategory?: string;
   nutrientType?: string;
+}
+
+export interface GtmPlanPayload {
+  country: string;
+  crop?: string;
+  variety?: string;
+  technology?: string;
+  category?: string;
+  yieldImpact?: string;
+  benefits?: string;
+  applicationMethod?: string;
 }
 
 // ==============================================================================
@@ -224,10 +235,13 @@ export const agriApi = {
     }
   },
 
-  // 9. Fertilizer Helpers & Match Engine
+  // 9. Fertilizer Helpers & Match Engine (Supports both singular & plural)
   getFertilizerCategories: async () => {
     try {
-      const res = await fetch(`${BASE_URL}/fertilizer/categories`);
+      let res = await fetch(`${BASE_URL}/fertilizer/categories`);
+      if (res.status === 404) {
+        res = await fetch(`${BASE_URL}/fertilizers/categories`);
+      }
       if (!res.ok) throw new Error('Failed to fetch fertilizer categories');
       const json = await res.json();
       return json.data || json;
@@ -239,7 +253,10 @@ export const agriApi = {
 
   getFertilizerProducts: async (category: string) => {
     try {
-      const res = await fetch(`${BASE_URL}/fertilizer/products?category=${encodeURIComponent(category)}`);
+      let res = await fetch(`${BASE_URL}/fertilizer/products?category=${encodeURIComponent(category)}`);
+      if (res.status === 404) {
+        res = await fetch(`${BASE_URL}/fertilizers/products?category=${encodeURIComponent(category)}`);
+      }
       if (!res.ok) throw new Error('Failed to fetch fertilizer products');
       const json = await res.json();
       return json.data || json;
@@ -251,11 +268,18 @@ export const agriApi = {
 
   getFertilizerMatch: async (payload: { country: string; category?: string; productName?: string }) => {
     try {
-      const res = await fetch(`${BASE_URL}/fertilizer/calculate-match`, {
+      let res = await fetch(`${BASE_URL}/fertilizer/calculate-match`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      if (res.status === 404) {
+        res = await fetch(`${BASE_URL}/fertilizers/calculate-match`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
       if (!res.ok) throw new Error('Failed to calculate fertilizer match');
       return await res.json();
     } catch (err) {
@@ -264,7 +288,7 @@ export const agriApi = {
     }
   },
 
-  // 10. Machinery Match Engine (Calculates AI implement draft & zone fit)
+  // 10. Machinery Match Engine
   getMachineryMatch: async (payload: MachineryMatchPayload) => {
     try {
       let res = await fetch(`${BASE_URL}/machinery/calculate-match`, {
@@ -284,12 +308,12 @@ export const agriApi = {
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
       return await res.json();
     } catch (err) {
-      console.warn('Backend machinery match calculation fallback to spec heuristics:', err);
+      console.warn('Backend machinery match calculation fallback:', err);
       return null;
     }
   },
 
-  // 11. Regulatory Pathway (Live Master DB / AI)
+  // 11. Regulatory Pathway
   getRegulatoryPathway: async (payload: RegulatoryPathwayPayload) => {
     try {
       let res = await fetch(`${BASE_URL}/regulatory/pathway`, {
@@ -300,15 +324,6 @@ export const agriApi = {
 
       if (res.status === 404) {
         res = await fetch(`${BASE_URL}/regulatory-pathway`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      }
-
-      // Safe fallback for machinery direct controller route
-      if (res.status === 404 && payload.category === 'machinery') {
-        res = await fetch(`${BASE_URL}/machinery/regulatory`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -326,7 +341,43 @@ export const agriApi = {
     }
   },
 
-  // 12. Monitored Government Portals
+  // 12. Go-To-Market (GTM) 90-Day Plan Generation Engine
+  generateGtmPlan: async (payload: GtmPlanPayload) => {
+    try {
+      let res = await fetch(`${BASE_URL}/gtm/generate-plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          country: payload.country,
+          crop: payload.crop,
+          variety: payload.variety || payload.technology,
+          category: payload.category,
+          yieldImpact: payload.yieldImpact,
+          benefits: payload.benefits,
+          applicationMethod: payload.applicationMethod
+        }),
+      });
+
+      if (res.status === 404) {
+        res = await fetch(`${BASE_URL}/gtm/plan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `GTM Generation Failed (${res.status})`);
+      }
+      return await res.json();
+    } catch (err: any) {
+      console.error('Error generating GTM plan:', err);
+      throw err;
+    }
+  },
+
+  // 13. Monitored Government Portals
   getRegulatorySources: async (priority: string = '') => {
     try {
       const url = priority
@@ -340,7 +391,7 @@ export const agriApi = {
     }
   },
 
-  // 13. Live Policy Records
+  // 14. Live Policy Records
   getRegulatoryUpdates: async (reviewNeeded: boolean = false) => {
     try {
       const url = reviewNeeded
@@ -354,7 +405,7 @@ export const agriApi = {
     }
   },
 
-  // 14. Vendor Recommendations
+  // 15. Vendor Recommendations
   getVendorRecommendations: async (latitude: number, longitude: number, crop: string) => {
     try {
       const res = await fetch(`${BASE_URL}/recommendations`, {
@@ -369,8 +420,8 @@ export const agriApi = {
     }
   },
 
-  // 15. Seed Country Recommendations (80%+ Alternative Markets)
-getSeedRecommendations: async (payload: { tech: any; currentCountry: string }) => {
+  // 16. Seed Country Recommendations (80%+ Alternative Markets)
+  getSeedRecommendations: async (payload: { tech: any; currentCountry: string }) => {
     try {
       const res = await fetch(`${BASE_URL}/recommendations/seed-recommendations`, {
         method: 'POST',
@@ -386,10 +437,12 @@ getSeedRecommendations: async (payload: { tech: any; currentCountry: string }) =
   },
 };
 
-
 // ==============================================================================
 // 3. AUXILIARY STANDALONE EXPORTS
 // ==============================================================================
+
+// Standalone GTM Export (direct consumption)
+export const generateAiGtmPlan = agriApi.generateGtmPlan;
 
 // Crop Protection Dropdown Fetchers
 export const fetchCropProtectionChemicalTypes = async (): Promise<string[]> => {
@@ -510,4 +563,3 @@ export const getMachineryCompanies = async (type: string, category: string): Pro
     return [];
   }
 };
-

@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { ExternalLink, Wheat, Users, Banknote, CheckCircle2 } from 'lucide-react';
 import { useWizard } from '../state/wizardStore';
 import GTMAnalysisLoading from '../UI/GTMAnalysisLoading';
+import { agriApi } from '../services/agriApi';
 
 export default function SeedGtmView() {
   const { state } = useWizard();
@@ -36,7 +37,6 @@ export default function SeedGtmView() {
   const isFetchingRef = useRef(false);
 
   useEffect(() => {
-    // Agar session storage me already plan saved hai toh API hit nahi karenge
     if (planData) {
       setLoading(false);
       return;
@@ -48,32 +48,23 @@ export default function SeedGtmView() {
     async function fetchSeedGtm() {
       setLoading(true);
       try {
-        const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-        const res = await fetch(`${BASE_URL}/gtm/generate-plan`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            country,
-            crop: cropName,
-            variety: varietyName,
-            category: 'Seeds & Varieties',
-            yieldImpact: yieldBenchmark,
-            benefits: tech.features || tech.desc || tech.keyBenefits || 'Climate-resilient, certified high germination seed',
-            applicationMethod: tech.method || 'Direct Mechanical / Manual Sowing',
-          }),
+        const json = await agriApi.generateGtmPlan({
+          country,
+          crop: cropName,
+          variety: varietyName,
+          category: 'Seeds & Varieties',
+          yieldImpact: yieldBenchmark,
+          benefits: tech.features || tech.desc || tech.keyBenefits || 'Climate-resilient, certified high germination seed',
+          applicationMethod: tech.method || 'Direct Mechanical / Manual Sowing',
         });
 
-        if (res.ok) {
-          const json = await res.json();
-          if (json.data) {
-            // Plan generate hote hi sessionStorage me save
-            try {
-              sessionStorage.setItem(sessionKey, JSON.stringify(json.data));
-            } catch (storageErr) {
-              console.warn('Failed to cache Seed GTM plan:', storageErr);
-            }
-            setPlanData(json.data);
+        if (json?.data) {
+          try {
+            sessionStorage.setItem(sessionKey, JSON.stringify(json.data));
+          } catch (storageErr) {
+            console.warn('Failed to cache Seed GTM plan:', storageErr);
           }
+          setPlanData(json.data);
         }
       } catch (err: any) {
         console.warn('Seed GTM fetch error:', err);
@@ -86,7 +77,6 @@ export default function SeedGtmView() {
     fetchSeedGtm();
   }, [country, varietyName, cropName, yieldBenchmark, sessionKey, planData]);
 
-  // Loading Screen (sirf tab dikhega jab cache empty ho aur API fetch chal rahi ho)
   if (loading || !planData) {
     return (
       <GTMAnalysisLoading
@@ -97,7 +87,6 @@ export default function SeedGtmView() {
     );
   }
 
-  // Live Data Extract
   const milestones = planData?.milestones || [];
   const firstContacts = planData?.first_contacts || [];
   const fundingWindows = planData?.funding_windows || [];
@@ -180,7 +169,7 @@ export default function SeedGtmView() {
         </div>
       )}
 
-      {/* 3. First Contacts (Flexbox Auto-Stretch) */}
+      {/* 3. First Contacts */}
       {firstContacts.length > 0 && (
         <div className="rounded-2xl border border-line bg-paper p-6 shadow-sm">
           <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-ink flex items-center gap-2">
@@ -200,7 +189,7 @@ export default function SeedGtmView() {
         </div>
       )}
 
-      {/* 4. Funding Windows (Flexbox Auto-Stretch) */}
+      {/* 4. Funding Windows */}
       {fundingWindows.length > 0 && (
         <div className="rounded-2xl border border-line bg-paper p-6 shadow-sm">
           <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-ink flex items-center gap-2">
@@ -233,7 +222,7 @@ export default function SeedGtmView() {
         </div>
       )}
 
-      {/* 5. Success Metrics (Flexbox Auto-Stretch) */}
+      {/* 5. Success Metrics */}
       {successMetrics.length > 0 && (
         <div className="rounded-2xl border border-line bg-paper p-6 shadow-sm">
           <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-ink flex items-center gap-2">
