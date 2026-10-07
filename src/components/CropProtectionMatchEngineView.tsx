@@ -53,7 +53,7 @@ export default function CropProtectionMatchEngineView() {
     async function loadProtectionMatch() {
       setLoading(true);
       try {
-        const res = await fetch(`${BASE_URL}/api/crop-protection/calculate-match`, {
+        const res = await fetch(`${BASE_URL}/crop-protection/calculate-match`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -179,7 +179,7 @@ export default function CropProtectionMatchEngineView() {
           pests: p.targetPest,
         }));
 
-        const res = await fetch('http://localhost:5000/api/crop-protection/synthesize-zone', {
+          const res = await fetch(`${BASE_URL}/crop-protection/synthesize-zone`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
