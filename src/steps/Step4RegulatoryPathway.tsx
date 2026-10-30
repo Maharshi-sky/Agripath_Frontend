@@ -38,6 +38,27 @@ const COUNTRY_TO_CODE: Record<string, string> = {
   'brazil': 'BR'
 };
 
+// ── UNIVERSAL AGRIPASS URL RESOLVER (Localhost, Vercel & AWS Custom Domain) ──
+function resolveAgriPassBaseUrl(): string {
+  const isBrowser = typeof window !== 'undefined';
+  const isLocalHost = isBrowser && (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  );
+
+  if (isLocalHost) {
+    return import.meta.env.VITE_AGRIPASS_URL || 'http://localhost:5173';
+  }
+
+  // Production (Vercel/AWS custom domain env variable ya live fallback)
+  const envUrl = import.meta.env.VITE_AGRIPASS_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
+    return envUrl.trim().replace(/\/+$/, '');
+  }
+
+  return 'https://agripass-two.vercel.app';
+}
+
 export default function Step4RegulatoryPathway({ onToast }: { onToast?: (message: string) => void }) {
   const navigate = useNavigate();
   const { state, markRegDone, advanceFromStep } = useWizard();
@@ -188,9 +209,9 @@ export default function Step4RegulatoryPathway({ onToast }: { onToast?: (message
     loadingCategory = 'seeds';
   }
 
-  // ── AGRIPASS DYNAMIC JUMP URL GENERATOR ──
+  // ── DYNAMIC AGRIPASS BASE URL & JUMP LINK ──
   const destCode = COUNTRY_TO_CODE[String(targetCountry).trim().toLowerCase()] || 'UG';
-  const AGRIPASS_BASE_URL = 'http://localhost:5173';
+  const AGRIPASS_BASE_URL = resolveAgriPassBaseUrl();
   const agripassUrl = `${AGRIPASS_BASE_URL}/?dest=${destCode}&cat=${agripassCategory}&tech=${encodeURIComponent(targetTech)}&commodity=${encodeURIComponent(currentTech.targetCrop || currentTech.crop || '')}`;
 
   // ── SYNCHRONIZED CACHE LAYER ──
