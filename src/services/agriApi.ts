@@ -12,6 +12,16 @@ const rawBase = isLocal
 // Clean duplicate slashes and ensure uniform base
 export const BASE_URL = rawBase.replace(/\/+$/, '');
 
+// Safe JSON parser to prevent "Unexpected token '<'" when backend returns HTML error pages
+async function safeJson(res: Response) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Invalid JSON response from server (status: ${res.status}). Server returned HTML instead of API data.`);
+  }
+}
+
 // ==============================================================================
 // 1. TYPES & INTERFACES
 // ==============================================================================
@@ -116,7 +126,7 @@ export const agriApi = {
   checkHealth: async () => {
     try {
       const res = await fetch(`${BASE_URL}/health`);
-      return await res.json();
+      return await safeJson(res);
     } catch (err) {
       console.error('Health check failed:', err);
       return { status: 'offline' };
@@ -133,7 +143,7 @@ export const agriApi = {
 
       const res = await fetch(`${BASE_URL}/seeds?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch seeds');
-      return await res.json();
+      return await safeJson(res);
     } catch (err) {
       console.error(err);
       return [];
@@ -145,7 +155,7 @@ export const agriApi = {
     try {
       const res = await fetch(`${BASE_URL}/crops/groups`);
       if (!res.ok) throw new Error('Failed to fetch crop groups');
-      return await res.json();
+      return await safeJson(res);
     } catch (err) {
       console.error('Error fetching crop groups:', err);
       return [];
@@ -157,7 +167,7 @@ export const agriApi = {
     try {
       const res = await fetch(`${BASE_URL}/crops/names?group=${encodeURIComponent(cropGroup)}`);
       if (!res.ok) throw new Error('Failed to fetch crops');
-      return await res.json();
+      return await safeJson(res);
     } catch (err) {
       console.error('Error fetching crops by group:', err);
       return [];
@@ -169,7 +179,7 @@ export const agriApi = {
     try {
       const res = await fetch(`${BASE_URL}/crops/varieties?crop=${encodeURIComponent(cropName)}`);
       if (!res.ok) throw new Error('Failed to fetch varieties');
-      return await res.json();
+      return await safeJson(res);
     } catch (err) {
       console.error('Error fetching varieties by crop:', err);
       return [];
@@ -183,7 +193,7 @@ export const agriApi = {
       if (cropName) params.append('crop', cropName);
       const res = await fetch(`${BASE_URL}/crops/details?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to fetch variety details');
-      return await res.json();
+      return await safeJson(res);
     } catch (err) {
       console.error('Error fetching variety details:', err);
       return null;
@@ -208,7 +218,7 @@ export const agriApi = {
       }
 
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
-      return await res.json();
+      return await safeJson(res);
     } catch (err) {
       console.error('Error fetching seed match score:', err);
       return null;
@@ -233,11 +243,11 @@ export const agriApi = {
       }
 
       if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
+        const errJson = await safeJson(res).catch(() => ({}));
         throw new Error(errJson.error || `HTTP Error ${res.status}`);
       }
 
-      return await res.json();
+      return await safeJson(res);
     } catch (err: any) {
       console.error('Error fetching biological match score:', err);
       throw err;
@@ -252,7 +262,7 @@ export const agriApi = {
         res = await fetch(`${BASE_URL}/fertilizer/categories`);
       }
       if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-      const json = await res.json();
+      const json = await safeJson(res);
       return json.data || json || [];
     } catch (err) {
       console.warn('API error fetching fertilizer categories:', err);
@@ -270,7 +280,7 @@ export const agriApi = {
         res = await fetch(country ? `${BASE_URL}/fertilizer/zones?country=${encodeURIComponent(country)}` : `${BASE_URL}/fertilizer/zones`);
       }
       if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-      const json = await res.json();
+      const json = await safeJson(res);
       return json.data || json || [];
     } catch (err) {
       console.warn('Zone fetch error:', err);
@@ -288,7 +298,7 @@ export const agriApi = {
         res = await fetch(category ? `${BASE_URL}/fertilizer/products?category=${encodeURIComponent(category)}` : `${BASE_URL}/fertilizer/products`);
       }
       if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-      const json = await res.json();
+      const json = await safeJson(res);
       return json.data || json || [];
     } catch (err) {
       console.warn('Product fetch error:', err);
@@ -311,7 +321,7 @@ export const agriApi = {
         });
       }
       if (!res.ok) throw new Error('AI Match calculation failed');
-      return await res.json();
+      return await safeJson(res);
     } catch (err) {
       console.warn('Fertilizer calculate match error:', err);
       return null;
@@ -336,7 +346,7 @@ export const agriApi = {
       }
 
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
-      return await res.json();
+      return await safeJson(res);
     } catch (err) {
       console.warn('Backend machinery match calculation fallback:', err);
       return null;
@@ -361,10 +371,10 @@ export const agriApi = {
       }
 
       if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
+        const errJson = await safeJson(res).catch(() => ({}));
         throw new Error(errJson.error || `HTTP Error ${res.status}`);
       }
-      return await res.json();
+      return await safeJson(res);
     } catch (err: any) {
       console.error('Error fetching regulatory pathway:', err);
       throw err;
@@ -397,10 +407,10 @@ export const agriApi = {
       }
 
       if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
+        const errJson = await safeJson(res).catch(() => ({}));
         throw new Error(errJson.error || `GTM Generation Failed (${res.status})`);
       }
-      return await res.json();
+      return await safeJson(res);
     } catch (err: any) {
       console.error('Error generating GTM plan:', err);
       throw err;
@@ -414,7 +424,7 @@ export const agriApi = {
         ? `${BASE_URL}/regulatory/sources?priority=${priority}`
         : `${BASE_URL}/regulatory/sources`;
       const res = await fetch(url);
-      return await res.json();
+      return await safeJson(res);
     } catch (err) {
       console.error('Error fetching regulatory sources:', err);
       return [];
@@ -428,7 +438,7 @@ export const agriApi = {
         ? `${BASE_URL}/regulatory/updates?review_needed=true`
         : `${BASE_URL}/regulatory/updates`;
       const res = await fetch(url);
-      return await res.json();
+      return await safeJson(res);
     } catch (err) {
       console.error('Error fetching regulatory updates:', err);
       return [];
@@ -443,7 +453,7 @@ export const agriApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ latitude, longitude, crop }),
       });
-      return await res.json();
+      return await safeJson(res);
     } catch (err) {
       console.error('Error fetching vendor recommendations:', err);
       return null;
@@ -459,7 +469,7 @@ export const agriApi = {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
-      return await res.json();
+      return await safeJson(res);
     } catch (err) {
       console.error('Error fetching seed recommendations:', err);
       return { success: false, recommendations: [] };
@@ -477,7 +487,7 @@ export const agriApi = {
         res = await fetch(`${BASE_URL}/irrigation/crop-water-requirements`);
       }
       if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-      const json = await res.json();
+      const json = await safeJson(res);
       return json.data || [];
     } catch (err) {
       console.warn('Failed to fetch crop water requirements:', err);
@@ -503,11 +513,11 @@ export const agriApi = {
       }
 
       if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
+        const errJson = await safeJson(res).catch(() => ({}));
         throw new Error(errJson.error || `HTTP Error ${res.status}`);
       }
 
-      return await res.json();
+      return await safeJson(res);
     } catch (err) {
       console.error('Error fetching country irrigation recommendation:', err);
       throw err;
@@ -536,7 +546,7 @@ export const fetchCropProtectionChemicalTypes = async (): Promise<string[]> => {
   try {
     const res = await fetch(`${BASE_URL}/crop-protection/chemical-types`);
     if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-    const json = await res.json();
+    const json = await safeJson(res);
     return json.success ? json.data : json.data || [];
   } catch (err) {
     console.error('Error fetching chemical types:', err);
@@ -551,7 +561,7 @@ export const getBioCropTypes = async (): Promise<string[]> => {
   try {
     const res = await fetch(`${BASE_URL}/bio-inputs/crops`);
     if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-    const json = await res.json();
+    const json = await safeJson(res);
     return json.data || [];
   } catch (err) {
     console.error('Error fetching bio crop types:', err);
@@ -566,7 +576,7 @@ export const getBioCategories = async (cropType?: string): Promise<string[]> => 
       : `${BASE_URL}/bio-inputs/categories`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-    const json = await res.json();
+    const json = await safeJson(res);
     return json.data || [];
   } catch (err) {
     console.error('Error fetching bio categories:', err);
@@ -581,7 +591,7 @@ export const getBioCompanies = async (cropType?: string, category?: string): Pro
     if (category) params.append('category', category);
     const res = await fetch(`${BASE_URL}/bio-inputs/companies?${params.toString()}`);
     if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-    const json = await res.json();
+    const json = await safeJson(res);
     return json.data || [];
   } catch (err) {
     console.error('Error fetching bio companies:', err);
@@ -597,7 +607,7 @@ export const getBioProducts = async (cropType?: string, category?: string, compa
     if (company) params.append('company', company);
     const res = await fetch(`${BASE_URL}/bio-inputs/products?${params.toString()}`);
     if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-    const json = await res.json();
+    const json = await safeJson(res);
     return json.data || [];
   } catch (err) {
     console.error('Error fetching bio products:', err);
@@ -610,7 +620,7 @@ export const getMachineryCategories = async (type: string): Promise<string[]> =>
   try {
     const res = await fetch(`${BASE_URL}/machinery/categories?type=${encodeURIComponent(type || 'Machinery')}`);
     if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-    const json = await res.json();
+    const json = await safeJson(res);
     return json.data || [];
   } catch (err) {
     console.error('Error fetching machinery categories:', err);
@@ -627,7 +637,7 @@ export const getMachineryProducts = async (type: string, category?: string, comp
 
     const res = await fetch(`${BASE_URL}/machinery/products?${params.toString()}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
+    const json = await safeJson(res);
     return json.data || json || [];
   } catch (err) {
     console.error('Error fetching machinery products:', err);
@@ -643,7 +653,7 @@ export const getMachineryCompanies = async (type: string, category: string): Pro
 
     const res = await fetch(`${BASE_URL}/machinery/companies?${params.toString()}`);
     if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-    const json = await res.json();
+    const json = await safeJson(res);
     return json.data || [];
   } catch (err) {
     console.error('Error fetching machinery companies:', err);
